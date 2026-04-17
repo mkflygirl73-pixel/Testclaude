@@ -38,7 +38,7 @@ function WeekDots({ userId, workouts }) {
 }
 
 export default function Profile() {
-  const { users, workouts, currentUserId, profileUserId, setCurrentUser, setView, getUserStats, getUnlockedAchievements } = useWorkoutStore()
+  const { users, workouts, currentUserId, ownerId, profileUserId, setCurrentUser, setView, getUserStats, getUnlockedAchievements, removeUser } = useWorkoutStore()
   const [showSwitcher, setShowSwitcher] = useState(false)
 
   const userId = profileUserId || currentUserId
@@ -46,6 +46,8 @@ export default function Profile() {
   const stats = getUserStats(userId)
   const unlockedIds = getUnlockedAchievements(userId).map(a => a.id)
   const isMe = userId === currentUserId
+  const isOwner = currentUserId === ownerId
+  const canRemove = isOwner && userId !== ownerId && !isMe
   const userWorkouts = workouts.filter(w => w.userId === userId)
 
   if (!user) return null
@@ -63,20 +65,38 @@ export default function Profile() {
             <UserAvatar emoji={user.emoji} size="lg" ring={isMe} />
             <div>
               <h1 className="text-2xl font-black text-white">{user.name}</h1>
-              {isMe && <div className="text-xs text-orange-400 font-bold uppercase tracking-wider">That&apos;s you!</div>}
+              <div className="flex items-center gap-2 mt-0.5">
+                {isMe && <span className="text-xs text-orange-400 font-bold uppercase tracking-wider">That&apos;s you!</span>}
+                {userId === ownerId && <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">👑 Admin</span>}
+              </div>
               <div className="text-xs text-slate-500 mt-0.5">
                 Joined {format(parseISO(user.joinDate), 'MMM yyyy')}
               </div>
             </div>
           </div>
-          {isMe && (
-            <button
-              onClick={() => setShowSwitcher(v => !v)}
-              className="text-xs bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-slate-300 font-semibold tap-highlight-none"
-            >
-              Switch
-            </button>
-          )}
+          <div className="flex gap-2">
+            {isMe && (
+              <button
+                onClick={() => setShowSwitcher(v => !v)}
+                className="text-xs bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-slate-300 font-semibold tap-highlight-none"
+              >
+                Switch
+              </button>
+            )}
+            {canRemove && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`Remove ${user.name} from Crest? This will delete all their workouts.`)) {
+                    removeUser(userId)
+                    setView('dashboard')
+                  }
+                }}
+                className="text-xs bg-red-900/60 border border-red-700 px-3 py-1.5 rounded-lg text-red-400 font-semibold tap-highlight-none hover:bg-red-900"
+              >
+                Remove
+              </button>
+            )}
+          </div>
         </div>
 
         {/* User switcher */}

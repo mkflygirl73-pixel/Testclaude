@@ -72,6 +72,7 @@ export const useWorkoutStore = create(
       workouts: [],
       reactions: {},
       currentUserId: null,
+      ownerId: null,
       view: 'dashboard',
       profileUserId: null,
       toasts: [],
@@ -82,11 +83,33 @@ export const useWorkoutStore = create(
         set(state => ({
           users: [...state.users, { id, name, emoji, joinDate: new Date().toISOString() }],
           currentUserId: state.currentUserId || id,
+          ownerId: state.ownerId || id,
         }))
         return id
       },
 
       setCurrentUser: (userId) => set({ currentUserId: userId, view: 'dashboard' }),
+
+      removeUser: (userId) => {
+        const { currentUserId, ownerId } = get()
+        if (currentUserId !== ownerId) return
+        if (userId === ownerId) return
+        set(state => {
+          const reactions = { ...state.reactions }
+          state.workouts.filter(w => w.userId === userId).forEach(w => delete reactions[w.id])
+          return {
+            users: state.users.filter(u => u.id !== userId),
+            workouts: state.workouts.filter(w => w.userId !== userId),
+            reactions,
+            unlockedAchievements: Object.fromEntries(
+              Object.entries(state.unlockedAchievements).filter(([k]) => k !== userId)
+            ),
+            currentUserId: state.currentUserId === userId ? ownerId : state.currentUserId,
+            profileUserId: state.profileUserId === userId ? null : state.profileUserId,
+            view: state.profileUserId === userId ? 'dashboard' : state.view,
+          }
+        })
+      },
 
       setView: (view, profileUserId = null) => set({ view, profileUserId }),
 
