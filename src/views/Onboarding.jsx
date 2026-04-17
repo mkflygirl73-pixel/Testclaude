@@ -8,11 +8,13 @@ export default function Onboarding() {
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🦁')
   const [withDemo, setWithDemo] = useState(null)
+  const [busy, setBusy] = useState(false)
 
-  const handleStart = () => {
-    if (!name.trim()) return
-    addUser(name.trim(), emoji)
-    if (withDemo) seedDemoData()
+  const handleStart = async () => {
+    if (!name.trim() || withDemo === null || busy) return
+    setBusy(true)
+    await addUser(name.trim(), emoji)
+    if (withDemo) await seedDemoData()
   }
 
   return (
@@ -88,10 +90,10 @@ export default function Onboarding() {
 
         <button
           onClick={handleStart}
-          disabled={!name.trim() || withDemo === null}
+          disabled={!name.trim() || withDemo === null || busy}
           className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl text-xl transition-all shadow-lg shadow-orange-500/30 tap-highlight-none"
         >
-          LET&apos;S GO 🚀
+          {busy ? 'Setting up...' : "LET'S GO 🚀"}
         </button>
       </div>
     </div>
