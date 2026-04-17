@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Lightning App Page for tracking profile names and addresses.</description>
+    <flexiPageRegions>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <label>Profile Tracker</label>
+    <pageTemplate>AppPage_Default</pageTemplate>
+    <regions>
+        <name>main</name>
+        <itemInstances>
+            <componentInstance>
+                <componentName>c:profileTracker</componentName>
+            </componentInstance>
+        </itemInstances>
+    </regions>
+    <type>AppPage</type>
+</FlexiPage>

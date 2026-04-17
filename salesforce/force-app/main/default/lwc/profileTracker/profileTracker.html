@@ -1,0 +1,124 @@
+<template>
+    <lightning-card title="Profile Tracker" icon-name="standard:contact">
+        <div class="slds-var-m-around_medium">
+
+            <!-- Add / Edit Form -->
+            <lightning-record-edit-form
+                object-api-name="Profile__c"
+                record-id={editRecordId}
+                onsuccess={handleSuccess}
+                onerror={handleError}
+            >
+                <h2 class="slds-text-heading_small slds-var-m-bottom_small">
+                    {formTitle}
+                </h2>
+
+                <lightning-messages></lightning-messages>
+
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <lightning-input-field field-name="Name" required></lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <lightning-input-field field-name="Street__c"></lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <lightning-input-field field-name="City__c"></lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <lightning-input-field field-name="State__c"></lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <lightning-input-field field-name="PostalCode__c"></lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <lightning-input-field field-name="Country__c"></lightning-input-field>
+                    </div>
+                </div>
+
+                <div class="slds-var-m-top_medium">
+                    <lightning-button
+                        variant="brand"
+                        type="submit"
+                        label={saveLabel}
+                        class="slds-var-m-right_x-small"
+                    ></lightning-button>
+                    <template if:true={editRecordId}>
+                        <lightning-button
+                            variant="neutral"
+                            label="Cancel"
+                            onclick={handleCancelEdit}
+                        ></lightning-button>
+                    </template>
+                </div>
+            </lightning-record-edit-form>
+
+            <hr class="slds-var-m-vertical_medium" />
+
+            <!-- Profile List -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </template>
+
+            <template if:false={isLoading}>
+                <template if:true={hasProfiles}>
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col"><div class="slds-truncate">Name</div></th>
+                                <th scope="col"><div class="slds-truncate">Street</div></th>
+                                <th scope="col"><div class="slds-truncate">City</div></th>
+                                <th scope="col"><div class="slds-truncate">State</div></th>
+                                <th scope="col"><div class="slds-truncate">Postal Code</div></th>
+                                <th scope="col"><div class="slds-truncate">Country</div></th>
+                                <th scope="col"><div class="slds-truncate">Actions</div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={profiles} for:item="profile">
+                                <tr key={profile.Id}>
+                                    <td><div class="slds-truncate">{profile.Name}</div></td>
+                                    <td><div class="slds-truncate">{profile.Street__c}</div></td>
+                                    <td><div class="slds-truncate">{profile.City__c}</div></td>
+                                    <td><div class="slds-truncate">{profile.State__c}</div></td>
+                                    <td><div class="slds-truncate">{profile.PostalCode__c}</div></td>
+                                    <td><div class="slds-truncate">{profile.Country__c}</div></td>
+                                    <td>
+                                        <lightning-button-icon
+                                            icon-name="utility:edit"
+                                            alternative-text="Edit"
+                                            title="Edit"
+                                            variant="border-filled"
+                                            size="small"
+                                            class="slds-var-m-right_xx-small"
+                                            data-id={profile.Id}
+                                            onclick={handleEdit}
+                                        ></lightning-button-icon>
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            alternative-text="Delete"
+                                            title="Delete"
+                                            variant="border-filled"
+                                            size="small"
+                                            data-id={profile.Id}
+                                            onclick={handleDelete}
+                                        ></lightning-button-icon>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+
+                <template if:false={hasProfiles}>
+                    <div class="slds-illustration slds-illustration_small">
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            No profiles found. Add one above.
+                        </p>
+                    </div>
+                </template>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
