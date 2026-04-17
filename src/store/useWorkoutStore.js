@@ -250,6 +250,13 @@ export const useWorkoutStore = create(
 
       REACTION_EMOJIS,
     }),
-    { name: 'crest-v2' }
+    {
+      name: 'crest-v2',
+      onRehydrateStorage: () => (state) => {
+        if (state && !state.ownerId && state.currentUserId) {
+          state.ownerId = state.currentUserId
+        }
+      },
+    }
   )
 )
