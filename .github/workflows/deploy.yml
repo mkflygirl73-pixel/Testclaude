@@ -3,8 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ['main']
-    paths-ignore:
-      - 'data/**'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +23,8 @@ jobs:
 
       - run: npm run build
         env:
-          VITE_GITHUB_TOKEN: ${{ secrets.VITE_GITHUB_TOKEN }}
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: peaceiris/actions-gh-pages@v4
         with:

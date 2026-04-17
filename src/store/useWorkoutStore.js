@@ -4,35 +4,41 @@ import { WORKOUT_TYPES } from '../data/workoutTypes'
 import { ACHIEVEMENTS } from '../data/achievements'
 import confetti from 'canvas-confetti'
 
-// ── GitHub file storage ───────────────────────────────────────────────────────
-const OWNER     = 'mkflygirl73-pixel'
-const REPO      = 'Testclaude'
-const BRANCH    = 'main'
-const DATA_PATH = 'data/db.json'
-const TOKEN     = import.meta.env.VITE_GITHUB_TOKEN
-const API_URL   = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${DATA_PATH}`
+// ── Supabase config ───────────────────────────────────────────────────────────
+// Paste your values here after following the setup steps in README.
+// The anon key is safe to commit — it only allows what your RLS policies permit.
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL      || ''
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-const hdrs = () => ({
-  Authorization: `Bearer ${TOKEN}`,
-  Accept: 'application/vnd.github.v3+json',
-  'Content-Type': 'application/json',
-})
-
-const encodeJSON = (obj) =>
-  btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 2))))
-
-const decodeB64 = (b64) => {
-  try { return JSON.parse(decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))))) }
-  catch { return emptyDB() }
-}
+const sb = (path, opts = {}) =>
+  fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+      ...(opts.headers || {}),
+    },
+  })
 
 const emptyDB = () => ({ users: {}, workouts: {}, reactions: {}, meta: {} })
 
 async function readDB() {
-  const res = await fetch(`${API_URL}?ref=${BRANCH}&_=${Date.now()}`, { headers: hdrs() })
-  if (!res.ok) return { data: emptyDB(), sha: '' }
-  const info = await res.json()
-  return { data: decodeB64(info.content), sha: info.sha }
+  const res = await sb('crest?id=eq.main&select=content')
+  if (!res.ok) return emptyDB()
+  const rows = await res.json()
+  return rows[0]?.content || emptyDB()
+}
+
+async function writeDB(updates) {
+  const current = await readDB()
+  const newData = applyPatch(current, updates)
+  await sb('crest?id=eq.main', {
+    method: 'PATCH',
+    body: JSON.stringify({ content: newData }),
+  })
+  return newData
 }
 
 function applyPatch(data, updates) {
@@ -51,27 +57,6 @@ function applyPatch(data, updates) {
   return out
 }
 
-async function writeDB(updates, retries = 4) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    const { data, sha } = await readDB()
-    const newData = applyPatch(data, updates)
-    const res = await fetch(API_URL, {
-      method: 'PUT',
-      headers: hdrs(),
-      body: JSON.stringify({
-        message: 'update [skip ci]',
-        content: encodeJSON(newData),
-        sha,
-        branch: BRANCH,
-      }),
-    })
-    if (res.ok) return newData
-    if (res.status !== 409) throw new Error(`Write failed: ${res.status}`)
-    await new Promise(r => setTimeout(r, 700 * (attempt + 1)))
-  }
-  throw new Error('Write failed after retries')
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const getUniqueDates = (workouts, userId) =>
   [...new Set(
@@ -81,7 +66,7 @@ const getUniqueDates = (workouts, userId) =>
 const calcStreak = (workouts, userId) => {
   const dates = getUniqueDates(workouts, userId)
   if (!dates.length) return 0
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const today     = format(new Date(), 'yyyy-MM-dd')
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
   if (dates[0] !== today && dates[0] !== yesterday) return 0
   let streak = 1
@@ -114,17 +99,16 @@ const calcStats = (workouts, reactions, userId) => {
   }
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const REACTION_EMOJIS = ['🔥', '💪', '🎉', '👏', '⚡']
+const REACTION_EMOJIS  = ['🔥', '💪', '🎉', '👏', '⚡']
 const CURRENT_USER_KEY = 'crest-uid'
 
 const WEEKLY_CHALLENGES = [
-  { title: 'Distance Week', desc: 'Log 5 run or cycle sessions', emoji: '🏃', goal: 5, type: 'type', types: ['run', 'bike'] },
-  { title: 'Iron Week',     desc: 'Hit the weights 4 times',     emoji: '🏋️', goal: 4, type: 'type', types: ['lift'] },
-  { title: 'Zen Week',      desc: 'Complete 3 yoga sessions',    emoji: '🧘', goal: 3, type: 'type', types: ['yoga'] },
-  { title: 'Swim Week',     desc: 'Dive in for 3 swim sessions', emoji: '🏊', goal: 3, type: 'type', types: ['swim'] },
-  { title: 'Marathon Week', desc: 'Log 10+ workouts total',      emoji: '💥', goal: 10, type: 'total' },
-  { title: 'Variety Pack',  desc: 'Try 4 different workout types', emoji: '🎯', goal: 4, type: 'variety' },
+  { title: 'Distance Week', desc: 'Log 5 run or cycle sessions',    emoji: '🏃', goal: 5,  type: 'type',    types: ['run', 'bike'] },
+  { title: 'Iron Week',     desc: 'Hit the weights 4 times',        emoji: '🏋️', goal: 4,  type: 'type',    types: ['lift'] },
+  { title: 'Zen Week',      desc: 'Complete 3 yoga sessions',       emoji: '🧘', goal: 3,  type: 'type',    types: ['yoga'] },
+  { title: 'Swim Week',     desc: 'Dive in for 3 swim sessions',    emoji: '🏊', goal: 3,  type: 'type',    types: ['swim'] },
+  { title: 'Marathon Week', desc: 'Log 10+ workouts total',         emoji: '💥', goal: 10, type: 'total' },
+  { title: 'Variety Pack',  desc: 'Try 4 different workout types',  emoji: '🎯', goal: 4,  type: 'variety' },
 ]
 
 const DEMO_NAMES = [{ name: 'Alex', emoji: '🦁' }, { name: 'Sam', emoji: '🐯' }, { name: 'Jordan', emoji: '🦅' }]
@@ -156,10 +140,11 @@ export const useWorkoutStore = create((set, get) => ({
   init: async () => {
     if (get().initialized) return
     set({ initialized: true })
-    const { data } = await readDB()
+    const data = await readDB()
     get()._sync(data)
     set({ loading: false })
-    setInterval(async () => { const { data } = await readDB(); get()._sync(data) }, 5000)
+    // Poll every 5 s so all open tabs stay in sync
+    setInterval(async () => { const d = await readDB(); get()._sync(d) }, 5000)
   },
 
   addUser: async (name, emoji) => {
@@ -184,10 +169,7 @@ export const useWorkoutStore = create((set, get) => ({
   removeUser: async (userId) => {
     const { currentUserId, ownerId, workouts } = get()
     if (currentUserId !== ownerId || userId === ownerId) return
-    const updates = {
-      [`users/${userId}`]: null,
-      [`meta/unlockedAchievements/${userId}`]: null,
-    }
+    const updates = { [`users/${userId}`]: null, [`meta/unlockedAchievements/${userId}`]: null }
     workouts.filter(w => w.userId === userId).forEach(w => {
       updates[`workouts/${w.id}`] = null
       updates[`reactions/${w.id}`] = null
@@ -199,15 +181,15 @@ export const useWorkoutStore = create((set, get) => ({
   logWorkout: async (type, duration, notes = '') => {
     const { currentUserId, workouts, reactions, unlockedAchievements } = get()
     if (!currentUserId) return null
-    const wt = WORKOUT_TYPES.find(t => t.id === type)
-    const points = Math.round(wt.points * duration)
-    const id = `w_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    const wt      = WORKOUT_TYPES.find(t => t.id === type)
+    const points  = Math.round(wt.points * duration)
+    const id      = `w_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
     const workout = { id, userId: currentUserId, type, duration, notes, date: new Date().toISOString(), points }
 
     set(state => ({ workouts: [workout, ...state.workouts] }))
 
-    const stats = calcStats([workout, ...workouts], reactions, currentUserId)
-    const nowUnlocked = ACHIEVEMENTS.filter(a => a.check(stats)).map(a => a.id)
+    const stats      = calcStats([workout, ...workouts], reactions, currentUserId)
+    const nowUnlocked  = ACHIEVEMENTS.filter(a => a.check(stats)).map(a => a.id)
     const prevUnlocked = unlockedAchievements[currentUserId] || []
     const justUnlocked = nowUnlocked.filter(i => !prevUnlocked.includes(i))
 
