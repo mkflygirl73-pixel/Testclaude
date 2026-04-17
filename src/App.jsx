@@ -6,12 +6,14 @@ import Dashboard from './views/Dashboard'
 import LogWorkout from './views/LogWorkout'
 import Leaderboard from './views/Leaderboard'
 import Profile from './views/Profile'
+import ProfileDirectory from './views/ProfileDirectory'
 
 const VIEWS = {
   dashboard: Dashboard,
   log: LogWorkout,
   leaderboard: Leaderboard,
   profile: Profile,
+  people: ProfileDirectory,
 }
 
 export default function App() {

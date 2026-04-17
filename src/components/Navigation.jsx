@@ -1,10 +1,11 @@
 import { useWorkoutStore } from '../store/useWorkoutStore'
 
 const TABS = [
-  { id: 'dashboard',   label: 'Feed',         icon: '🏠' },
-  { id: 'leaderboard', label: 'Ranks',         icon: '🏆' },
-  { id: 'log',         label: '',              icon: '➕', center: true },
-  { id: 'profile',     label: 'Me',            icon: '👤' },
+  { id: 'dashboard',        label: 'Feed',    icon: '🏠' },
+  { id: 'leaderboard',      label: 'Ranks',   icon: '🏆' },
+  { id: 'log',              label: '',        icon: '➕', center: true },
+  { id: 'people',           label: 'People',  icon: '📋' },
+  { id: 'profile',          label: 'Me',      icon: '👤' },
 ]
 
 export default function Navigation() {
